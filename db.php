@@ -1,21 +1,15 @@
 <?php
-// db.php
 
-// 1. Connect to the SQLite database file
-// If the file doesn't exist, SQLite3 will create it automatically.
+$dbPath = getenv('DB_PATH') ?: 'tracker.sqlite';
+
 try {
-    $db = new PDO('sqlite:tracker.sqlite');
-    // Enable exceptions for errors
+    $db = new PDO("sqlite:$dbPath");
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    // Fetch results as associative arrays by default
     $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     die("Database connection failed: " . $e->getMessage());
 }
 
-// 2. Define the Schema
-// We use INTEGER for start/end times to store Unix Timestamps.
-// This makes math (end - start = duration) trivial.
 $schema = "
 CREATE TABLE IF NOT EXISTS time_entries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,5 +20,4 @@ CREATE TABLE IF NOT EXISTS time_entries (
 );
 ";
 
-// 3. Execute Schema Creation
 $db->exec($schema);

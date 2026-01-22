@@ -1,13 +1,15 @@
-version: '3.8'
-
 services:
   time-tracker:
     build: .
     container_name: time-tracker
     ports:
       - "8080:80"
+    environment:
+      - DB_PATH=/var/www/db/tracker.sqlite
     volumes:
-      # Mount the current directory to the container.
-      # This ensures the database file persists on your local machine.
-      - .:/var/www/html
+      - .:/var/www/html:ro
+      - tracker-data:/var/www/db
     restart: unless-stopped
+
+volumes:
+  tracker-data:
