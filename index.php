@@ -51,9 +51,16 @@
 </table>
 
 <script>
+    /**
+     * @typedef {Object} TimeEntry
+     * @property {number} id
+     * @property {string|null} project
+     * @property {number} start_time
+     * @property {number|null} end_time
+     */
     let timerInterval;
     let currentStartTime = null;
-    // cache entries to help with validation lookups
+    /** @type {TimeEntry[]} */
     let entriesCache = [];
 
     // Set default dates on load (Last 7 days)
@@ -62,10 +69,13 @@
         const lastWeek = new Date();
         lastWeek.setDate(now.getDate() - 7);
 
-        // FIX: Use local time instead of UTC (toISOString)
-        // We reuse the helper function defined at the bottom of the script
-        document.getElementById('filter-to').value = toLocalISOString(now).split('T')[0];
-        document.getElementById('filter-from').value = toLocalISOString(lastWeek).split('T')[0];
+        /** @type {HTMLInputElement} */
+        const toInput = document.getElementById('filter-to');
+        /** @type {HTMLInputElement} */
+        const fromInput = document.getElementById('filter-from');
+
+        toInput.value = toLocalISOString(now).split('T')[0];
+        fromInput.value = toLocalISOString(lastWeek).split('T')[0];
 
         loadEntries();
         setInterval(updateLocalClock, 1000);
@@ -73,13 +83,31 @@
     });
 
     async function loadEntries() {
-        // Get Dates from inputs
-        const fromStr = document.getElementById('filter-from').value;
-        const toStr = document.getElementById('filter-to').value;
+        // FIX: JSDoc type hinting so IDE knows these have a .value property
+        /** @type {HTMLInputElement} */
+        const fromInput = document.getElementById('filter-from');
+        /** @type {HTMLInputElement} */
+        const toInput = document.getElementById('filter-to');
 
-        // Convert to Unix Timestamps (Start of day / End of day)
-        const fromTs = Math.floor(new Date(fromStr).setHours(0, 0, 0, 0) / 1000);
-        const toTs = Math.floor(new Date(toStr).setHours(23, 59, 59, 999) / 1000);
+        const fromStr = fromInput.value;
+        const toStr = toInput.value;
+
+        let fromTs = null;
+        let toTs = null;
+
+        // FIX: Parse date parts explicitly to force Local Time construction
+        // new Date("YYYY-MM-DD") defaults to UTC, which shifts dates back
+        // to the previous day in Western timezones.
+        if (fromStr) {
+            const [y, m, d] = fromStr.split('-').map(Number);
+            // Month is 0-indexed in JS Date constructor
+            fromTs = Math.floor(new Date(y, m - 1, d).setHours(0, 0, 0, 0) / 1000);
+        }
+
+        if (toStr) {
+            const [y, m, d] = toStr.split('-').map(Number);
+            toTs = Math.floor(new Date(y, m - 1, d).setHours(23, 59, 59, 999) / 1000);
+        }
 
         const res = await fetch('api.php', {
             method: 'POST',
@@ -93,7 +121,7 @@
         entriesCache = result.data;
 
         renderTable(result.data);
-        calculateStats(result.data); // NEW: Run the report math
+        calculateStats(result.data);
         checkActiveTimer(result.data);
     }
 
@@ -148,7 +176,7 @@
                 durationDisplay = formatDuration((entry.end_time - entry.start_time));
             }
 
-            // Helper to format Date object to "YYYY-MM-DDTHH:mm:ss" for input values
+            // Helper to format Date object to "YYYY-MM-DD T HH:mm:ss" for input values
             const startVal = toLocalISOString(start);
             const endVal = end ? toLocalISOString(end) : '';
 
@@ -189,7 +217,7 @@
         const newTime = Math.floor(new Date(valueStr).getTime() / 1000);
 
         // Find current values from cache for validation
-        const entry = entriesCache.find(e => e.id == id);
+        const entry = entriesCache.find(e => e.id === id);
         let start = field === 'start_time' ? newTime : entry.start_time;
         let end = field === 'end_time' ? newTime : entry.end_time;
 
@@ -198,7 +226,7 @@
         // Rule: Reasonable Year (Stage 8)
         if (newTime < 946684800) { // Jan 1, 2000
             alert("Date cannot be before year 2000");
-            loadEntries(); // Reset UI
+            await loadEntries(); // Reset UI
             return;
         }
 
@@ -206,7 +234,7 @@
         const now = Math.floor(Date.now() / 1000);
         if (field === 'end_time' && newTime > now) {
             alert("End time cannot be in the future.");
-            loadEntries();
+            await loadEntries();
             return;
         }
 
@@ -214,7 +242,7 @@
         // Rule: End cannot be before Start (Stages 4, 6)
         if (end && start > end) {
             alert("Start time cannot be after End time.");
-            loadEntries(); // Reset UI to previous valid state
+            await loadEntries(); // Reset UI to previous valid state
             return;
         }
 
@@ -290,7 +318,7 @@
     async function toggleTimer() {
         const action = currentStartTime ? 'stop' : 'start';
         await fetch('api.php', {method: 'POST', body: JSON.stringify({action: action})});
-        loadEntries();
+        await loadEntries();
     }
 
     function startTicking() {
