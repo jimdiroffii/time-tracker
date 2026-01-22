@@ -155,7 +155,7 @@
                     <tr id="row-${entry.id}">
                         <td>
                             <input type="text" class="edit-input"
-                                value="${entry.project || ''}"
+                                value="${escapeHtml(entry.project)}"
                                 placeholder="Add Project..."
                                 onblur="updateText(${entry.id}, 'project', this.value)">
                         </td>
@@ -302,6 +302,16 @@
 
     function stopTicking() {
         clearInterval(timerInterval);
+    }
+
+    function escapeHtml(text) {
+        if (!text) return "";
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
 </script>
 </body>
