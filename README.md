@@ -36,3 +36,11 @@ php -S localhost:8000
 
 Open your browser to `http://localhost:8000`.
 
+## Docker
+
+Clone the repo. Run docker compose. The application will be available on `8080`.
+
+```bash
+docker compose up -d
+```
+
