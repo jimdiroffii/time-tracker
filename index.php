@@ -62,9 +62,10 @@
         const lastWeek = new Date();
         lastWeek.setDate(now.getDate() - 7);
 
-        // Format for HTML date input (YYYY-MM-DD)
-        document.getElementById('filter-to').value = now.toISOString().split('T')[0];
-        document.getElementById('filter-from').value = lastWeek.toISOString().split('T')[0];
+        // FIX: Use local time instead of UTC (toISOString)
+        // We reuse the helper function defined at the bottom of the script
+        document.getElementById('filter-to').value = toLocalISOString(now).split('T')[0];
+        document.getElementById('filter-from').value = toLocalISOString(lastWeek).split('T')[0];
 
         loadEntries();
         setInterval(updateLocalClock, 1000);
