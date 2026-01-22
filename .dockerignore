@@ -1,0 +1,5 @@
+.git
+.idea
+*.sqlite
+docker-compose.yml
+Dockerfile
